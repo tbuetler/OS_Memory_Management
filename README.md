@@ -1,93 +1,128 @@
-# fall2024-25-lab1
+# BTI1341 Lab -- Assignment 01: Memory Allocation Simulation
 
+## Task Description
 
+The goal of this project is to write a simulation of a memory management system
+for **demand paging**. The system obtains requests to virtual addresses and has
+to translate them into physical addresses using paging and a TLB as explained
+during the course.
 
-## Getting started
+The system only simulates *a single process* and works as follows:
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+1. Memory accesses to multiple **virtual addresses** are simulated.
+2. For every access, the virtual address has to be split into a **virtual page
+   number (VPN)** and an **offset** within that page.
+3. A **translation lookaside buffer (TLB)** has to be consulted, to check if the
+   **physical frame number (PFN)** of that page has already been cached. On *TLB
+   hit,* the **physical address** is computed using the PFN found and the
+   computed offset.
+4. On *TLB miss,* a **page table** has to be consulted, to check if the page is
+   present in memory. If yes, the VPN and PFN are stored in the TLB and the
+   **physical address** is computed as described above.
+5. If the VPN is neither present in the TLB, nor in the page table, a new frame
+   must be allocated for it. For this, a **free frame list** (physical frames!)
+   has to be maintained. If it contains any free frames, one of them has to be
+   allocated for the page and the **physical address** is again computed as
+   above. *In addition, the page table, as well as the TLB, have to be properly
+   updated.*
+6. If there are no free frames left, translation is not possible. In this case,
+   an error occurs.
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+## Implementation Guidelines
 
-## Add your files
+To complete this lab assignment, the files provided in this directory have to be
+used as follows:
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+* ```mem_mgmt.h```: Defines the API of the memory management system. See
+  comments in the file itself, as well as simulation flow below to understand
+  how it works. **THIS FILE MUST NOT BE MODIFIED!**
+* ```mem_mgmt.c```: Contains your implementation of the functions from
+  ```mem_mgmt.h```. Of course, you may also create additional functions.
+* ```simulator.c```: Example simulator which calls the functions from
+  ```mem_mgmt.h```. Your implementation will be tested in a similar way.
+* ```Makefile```: Used to build the simulator. **THIS FILE MUST NOT BE
+  MODIFIED!**
+
+### Simulation Flow
+
+The simulation consists of three phases (see also *simulator.c*):
+
+1. **Setup phase**: a call to ```setup()``` is performed, passing all relevant
+   parameters of the simulation to your code.
+2. **Simulation phase**:
+   * A number of calls to ```translate()```, with varying virtual addresses is
+     made. This function either returns the physical address if successful, or
+     an error if a new free frame was required but not available (out of
+     memory). Additionally, on success, the function indicates if a new frame
+     had to be allocated, and if not, if the PFN was found in the TLB.
+   * The simulator may call ```status()``` at any time, to obtain the number of
+     free frames, allocated pages and valid TLB entries.
+5. At the end of the simulation, the simulator calls ```teardown()```, which
+   must free all allocated memory (of the simulation process itself - not
+   simulated memory!).
+
+### Data Structures To Be Implemented
+
+Memory management for the simulator may be implemented in many different ways,
+however we suggest that you use at least the three independent data structures
+described in the following:
+
+#### Free Frame List
+
+The free frame list maintains a list of all **physical frames** not mapped to
+any page. I.e. after setup (and before any call to ```translate()```), the
+number of free frames is equal to the number of all physical frames in the
+system.
+
+For the implementation, different data structures might be considered, e.g.:
+
+* Linked list (complexity: *O(1)*)
+* Array (complexity: *O(m)* with *m* being the total number of frames)
+* Bitmap (complexity same as for array, more space efficient)
+
+#### Translation Lookaside Buffer (TLB)
+
+Physically this part is normally realized by an *associative memory,* which can
+be thought of as a hardware hash table. It is typically *very* small compared to
+the page table.
+
+*If all TLB entries are in use, your memory management system must use a
+first-in, first-out (FIFO) replacement strategy!*
+
+For the implementation, different data structures might be considered, e.g. a
+linked list or a circular buffer.
+
+#### Page Table
+
+For this simulation, only a single-level page table is required. As the page
+table is not sparse, it might simply be represented as an array (array element
+index is VPN, element value is PFN). Clearly, other data structures are possible
+as well.
+
+## Submission
+
+To submit your solution, commit your final version to the *master* branch of
+your Git repository. Then, apply and push a *Git tag* marking your solution:
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.ti.bfh.ch/bti1341/faculty/labs/memory/fall2024-25-lab1.git
-git branch -M main
-git push -uf origin main
+git tag -a lab-1 -m "tagging lab-1"
+git push --all
+git push --tags
 ```
 
-## Integrate with your tools
+## Evaluation
 
-- [ ] [Set up project integrations](https://gitlab.ti.bfh.ch/bti1341/faculty/labs/memory/fall2024-25-lab1/-/settings/integrations)
+To obtain the full points in this lab, the following must be fulfilled:
 
-## Collaborate with your team
+* In order to be graded, submission must be done before the announced deadline
+  and with the proper tag applied, as described above.
+* Your code must compile *with the provided Makefile* and *without errors or
+  warnings.*
+* Tests will be run in similar fashion as in *simulator.c*, but with *randomized
+  addresses.*
+* Your code should not contain any memory leaks. It will be tested using
+  ```valgrind```:
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
-
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+```
+valgrind --tool=memcheck --leak-check=yes --show-reachable=yes -s ./simulator
+```
