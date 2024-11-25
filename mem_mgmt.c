@@ -14,7 +14,7 @@ typedef struct {
 } TLBEntry;
 
 // Global variables to hold memory management information
-static TLBEntry *TLB; // The Translation Lookaside Buffer (TLB)
+static TLBEntry *TLB; // The Translation Lookaside Buffer
 static uint16_t *pageTable; // Page Table to map VPNs to PFNs
 static bool *freeFrames; // Array to track which physical frames are free
 static uint8_t tlbMaxSize; // Maximum number of entries in the TLB
@@ -34,21 +34,24 @@ int setup(uint8_t tlb_max_size, uint16_t phy_frames, uint8_t pfn_bits, uint8_t v
 
     // Allocate memory for the TLB, Page Table, and Free Frame List
     TLB = (TLBEntry *) calloc(tlbMaxSize, sizeof(TLBEntry)); // Allocate TLB entries
-    if (!TLB) return -1; // Check if allocation failed
 
-    pageTable = (uint16_t *) calloc((1 << vpnBits), sizeof(uint16_t)); // Allocate page table
+    if (!TLB) return -1; // Return -1 if allocation failed
+
+    // Allocate memory for the page table
+    pageTable = (uint16_t *) calloc((1 << vpnBits), sizeof(uint16_t));
     if (!pageTable) {
         free(TLB); // Free TLB if allocation failed
-        return -1;
+        return -1; // Return -1 if allocation failed
     }
     // Initialize all page table entries to -1 (indicating not mapped)
     memset(pageTable, -1, (1 << vpnBits) * sizeof(uint16_t));
 
-    freeFrames = (bool *) calloc(totalFrames, sizeof(bool)); // Allocate free frame list
+    // Allocate free frame list
+    freeFrames = (bool *) calloc(totalFrames, sizeof(bool));
     if (!freeFrames) {
         free(TLB); // Free TLB and page table if allocation failed
         free(pageTable);
-        return -1;
+        return -1; // Return -1 if allocation failed
     }
     // Mark all frames as free
     for (uint16_t i = 0; i < totalFrames; i++) {
