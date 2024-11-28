@@ -69,9 +69,9 @@ int setup(uint8_t tlb_max_size, uint16_t phy_frames, uint8_t pfn_bits, uint8_t v
 
 int translate(uint64_t virtual_address, res_translate *result) {
     // Extract the VPN from the virtual address using bit shifting and masking
-    uint16_t vpn = (virtual_address >> (64 - vpnBits)) & ((1 << vpnBits) - 1);
+    uint16_t vpn = (virtual_address >> (56 - vpnBits)) & ((1 << vpnBits) - 1);
     // Extract the offset from the virtual address
-    uint64_t offset = virtual_address & ((1 << (64 - pfnBits)) - 1);
+    uint64_t offset = virtual_address & ((1 << (56 - pfnBits)) - 1);
     uint16_t pfn;
 
     // Check if the VPN is in the TLB (TLB hit check)
